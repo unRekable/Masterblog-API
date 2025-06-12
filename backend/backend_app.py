@@ -29,6 +29,55 @@ def posts():
     else:
         return jsonify(POSTS)
 
+@app.route('/api/posts/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+def post_by_id(id):
+    post = next((p for p in POSTS if p['id'] == id), None)
+
+    if post is None:
+        return jsonify({"error": "Post not found"}), 404
+
+    if request.method == 'GET':
+        return jsonify(post), 200
+
+    if request.method == 'DELETE':
+        POSTS.remove(post)
+        return jsonify({"message": f"Post with id {id} has been deleted successfully."}), 200
+
+    if request.method == 'PUT':
+        title = request.json['title']
+        content = request.json['content']
+
+        post["title"] = title
+        post["content"] = content
+
+        return jsonify(post), 200
+
+@app.route('/api/search', methods=['GET'])
+def search():
+    title_query = request.args.get('title', None)
+    content_query = request.args.get('content', None)
+
+    if title_query is None and content_query is None:
+        return jsonify({"error": "Missing title or content"}), 400
+
+    results = POSTS[:]
+
+    if title_query:
+        results = [
+            post for post in results
+            if title_query.lower() in post['title'].lower()
+        ]
+
+    if content_query:
+        results = [
+            post for post in results
+            if content_query.lower() in post['content'].lower()
+        ]
+
+    if results:
+        return jsonify(results), 200
+    else:
+        return jsonify({"error": "Post not found"}), 404
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5002, debug=True)

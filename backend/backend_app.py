@@ -27,7 +27,15 @@ def posts():
 
         return jsonify(new_post), 201
     else:
-        return jsonify(POSTS)
+        sort_key = request.args.get('sort')
+        if sort_key not in ['title', 'content']:
+            sort_key = None
+        if sort_key:
+            direction = request.args.get('direction', 'asc')
+            reverse_order = (direction == 'desc')
+            return jsonify(sorted(POSTS, key=lambda post: post[sort_key].lower(), reverse=reverse_order)), 200
+        else:
+            return jsonify(POSTS), 200
 
 @app.route('/api/posts/<int:id>', methods=['GET', 'PUT', 'DELETE'])
 def post_by_id(id):
@@ -78,6 +86,14 @@ def search():
         return jsonify(results), 200
     else:
         return jsonify({"error": "Post not found"}), 404
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return jsonify({"error": "Page not found"}), 404
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    return jsonify({"error": "Internal server error"}), 500
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5002, debug=True)
